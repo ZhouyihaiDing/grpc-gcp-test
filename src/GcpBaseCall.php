@@ -39,6 +39,13 @@ abstract class GcpBaseCall
     protected $metadata;
     protected $options;
 
+    // In GCP extension, it is when a RPC calls "start", we pick a channel.
+    // Thus we need to save the $me
+    protected $metadata_rpc = array();
+    // first_rpc is used to check whether the first request is sent for client
+    // streaming RPC.
+    protected $has_real_call = null;
+
     protected $real_call;
 
     /**
@@ -136,6 +143,10 @@ abstract class GcpBaseCall
      */
     public function getMetadata()
     {
+        if (!$this->has_real_call) {
+            $this->createRealCall();
+            $this->has_real_call = true;
+        }
         return $this->real_call->getMetadata();
     }
 
@@ -144,6 +155,10 @@ abstract class GcpBaseCall
      */
     public function getTrailingMetadata()
     {
+        if (!$this->has_real_call) {
+            $this->createRealCall();
+            $this->has_real_call = true;
+        }
         return $this->real_call->getTrailingMetadata();
     }
 
@@ -152,6 +167,10 @@ abstract class GcpBaseCall
      */
     public function getPeer()
     {
+        if (!$this->has_real_call) {
+            $this->createRealCall();
+            $this->has_real_call = true;
+        }
         return $this->real_call->getPeer();
     }
 
@@ -160,6 +179,10 @@ abstract class GcpBaseCall
      */
     public function cancel()
     {
+        if (!$this->has_real_call) {
+            $this->has_real_call = true;
+            $this->createRealCall();
+        }
         $this->real_call->cancel();
     }
 

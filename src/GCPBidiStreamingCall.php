@@ -24,13 +24,14 @@ namespace Grpc\Gcp;
  */
 class GCPBidiStreamingCall extends GcpBaseCall
 {
-    private $first_rpc = null;
-    private $metadata_rpc = null;
     private $response = null;
 
-    private function createRealCall($channel)
+    protected function createRealCall($data = null)
     {
-        $this->real_call = new \Grpc\BidiStreamingCall($channel, $this->method, $this->deserialize, $this->options);
+        $channel_ref = $this->_rpcPreProcess($data);
+        $this->real_call = new \Grpc\BidiStreamingCall($channel_ref->getRealChannel(
+            $this->gcp_channel->credentials), $this->method, $this->deserialize, $this->options);
+        $this->real_call->start($this->metadata_rpc);
         return $this->real_call;
     }
 
@@ -52,6 +53,10 @@ class GCPBidiStreamingCall extends GcpBaseCall
      */
     public function read()
     {
+        if (!$this->has_real_call) {
+            $this->createRealCall();
+            $this->has_real_call = true;
+        }
         $response = $this->real_call->read();
         if ($response) {
             $this->response = $response;
@@ -69,12 +74,9 @@ class GCPBidiStreamingCall extends GcpBaseCall
      */
     public function write($data, array $options = [])
     {
-        if (!$this->first_rpc) {
-            $this->first_rpc = $data;
-            $channel_ref = $this->_rpcPreProcess($data);
-            $this->createRealCall($channel_ref->getRealChannel(
-                $this->gcp_channel->credentials));
-            $this->real_call->start($this->metadata_rpc);
+        if (!$this->has_real_call) {
+            $this->createRealCall($data);
+            $this->has_real_call = true;
         }
         $this->real_call->write($data, $options);
     }
@@ -84,6 +86,10 @@ class GCPBidiStreamingCall extends GcpBaseCall
      */
     public function writesDone()
     {
+        if (!$this->has_real_call) {
+            $this->createRealCall();
+            $this->has_real_call = true;
+        }
         $this->real_call->writesDone();
     }
 

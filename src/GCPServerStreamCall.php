@@ -26,9 +26,10 @@ class GCPServerStreamCall extends GcpBaseCall
 {
     private $response = null;
 
-    private function createRealCall($channel)
+    protected function createRealCall($channel)
     {
         $this->real_call = new \Grpc\ServerStreamingCall($channel, $this->method, $this->deserialize, $this->options);
+        $this->has_real_call = true;
         return $this->real_call;
     }
 

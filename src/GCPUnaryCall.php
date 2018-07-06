@@ -24,9 +24,10 @@ namespace Grpc\Gcp;
  */
 class GCPUnaryCall extends GcpBaseCall
 {
-    private function createRealCall($channel)
+    protected function createRealCall($channel)
     {
         $this->real_call = new \Grpc\UnaryCall($channel, $this->method, $this->deserialize, $this->options);
+        $this->has_real_call = true;
         return $this->real_call;
     }
 

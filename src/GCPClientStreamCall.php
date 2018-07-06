@@ -24,15 +24,14 @@ namespace Grpc\Gcp;
  */
 class GCPClientStreamCall extends GcpBaseCall
 {
-    private $first_rpc = null;
-    private $metadata_rpc = null;
-
-    private function createRealCall($channel)
+    protected function createRealCall($data = null)
     {
-        $this->real_call = new \Grpc\ClientStreamingCall($channel, $this->method, $this->deserialize, $this->options);
+        $channel_ref = $this->_rpcPreProcess($data);
+        $this->real_call = new \Grpc\ClientStreamingCall($channel_ref->getRealChannel(
+          $this->gcp_channel->credentials), $this->method, $this->deserialize, $this->options);
+        $this->real_call->start($this->metadata_rpc);
         return $this->real_call;
     }
-
     /**
      * Pick a channel and start the call.
      *
@@ -56,12 +55,9 @@ class GCPClientStreamCall extends GcpBaseCall
      */
     public function write($data, array $options = [])
     {
-        if (!$this->first_rpc) {
-            $this->first_rpc = $data;
-            $channel_ref = $this->_rpcPreProcess($data);
-            $this->createRealCall($channel_ref->getRealChannel(
-                $this->gcp_channel->credentials));
-            $this->real_call->start($this->metadata_rpc);
+        if (!$this->has_real_call) {
+            $this->createRealCall($data);
+            $this->has_real_call = true;
         }
         $this->real_call->write($data, $options);
     }
